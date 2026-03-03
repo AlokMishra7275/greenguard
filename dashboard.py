@@ -146,7 +146,7 @@ elif section == "AI Advisory":
                 st.markdown(response.text)
 
             except Exception as e:
-                st.error("AI generation failed")
+                st.error(f"AI generation failed: {e}")
                 st.write(e)
 
 # ---------------- FOOTER ----------------
