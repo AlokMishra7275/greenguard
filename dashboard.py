@@ -108,7 +108,7 @@ elif section == "AI Advisory":
     st.subheader("🧠 AI Environmental Advisory")
 
     try:
-        genai.configure(api_key=st.secrets["AIzaSyCJHCZbAGl_aS12jy99nD-hr6A3K6aWLOc"])
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception:
         st.error("❌ Gemini API key not configured in Streamlit Secrets.")
         st.stop()
