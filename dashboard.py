@@ -1,38 +1,21 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import google.generativeai as genai
-import os
 
-# ---------------- PAGE CONFIG (MUST BE FIRST STREAMLIT COMMAND) ----------------
+# ---------------- CONFIG ----------------
 st.set_page_config(
-    page_title="GreenGuard AI Platform",
-    page_icon="🌍",
+    page_title="GreenGuard 🌍",
+    page_icon="🌿",
     layout="wide"
 )
 
-# ---------------- LOAD CSS ----------------
-def load_css():
-    css_path = os.path.join(os.path.dirname(__file__), "style.css")
-    if os.path.exists(css_path):
-        with open(css_path, "r") as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    else:
-        st.warning("⚠ style.css not found")
-
-load_css()
-
-# ---------------- TITLE ----------------
-st.title("🌍 GreenGuard – Real-Time Environmental Intelligence")
-
-# ---------------- SIDEBAR ----------------
-st.sidebar.title("Navigation")
-section = st.sidebar.radio(
-    "Go to",
-    ["Live Dashboard", "City Ranking", "AI Advisory"]
-)
-
-st.sidebar.markdown("---")
-st.sidebar.caption("Powered by Pathway + Gemini AI")
+# 🔎 AQI COLOR UTIL
+def aqi_label(aqi):
+    if aqi <= 50: return ("Good", "🟢")
+    if aqi <= 100: return ("Moderate", "🟡")
+    if aqi <= 200: return ("Unhealthy", "🟠")
+    return ("Hazardous", "🔴")
 
 # ---------------- LOAD DATA ----------------
 @st.cache_data(ttl=15)
@@ -43,129 +26,115 @@ def load_data():
 
 try:
     ranking, data = load_data()
-except Exception:
-    st.error("⚠ Data not available. Please check backend pipeline.")
+except Exception as e:
+    st.error("⚠ Data missing. Please ensure backend is running.")
     st.stop()
 
-latest_data = (
-    data.sort_values("Timestamp")
-    .groupby("City")
-    .tail(1)
-)
-
+latest = data.sort_values("Timestamp").groupby("City").tail(1)
 ranking = ranking.sort_values("risk_index", ascending=False)
 
-# ---------------- AQI COLOR FUNCTION ----------------
-def aqi_color(aqi):
-    if aqi <= 50:
-        return "🟢 Good"
-    elif aqi <= 100:
-        return "🟡 Moderate"
-    elif aqi <= 200:
-        return "🟠 Unhealthy"
-    else:
-        return "🔴 Severe"
+# ---------------- SIDEBAR ----------------
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("", ["📊 Overview", "📈 Trends", "🏆 Ranking", "🤖 AI Advisory"])
+st.sidebar.markdown("---")
+st.sidebar.caption("Powered by Pathway + Gemini AI")
 
-# ==========================================================
-# 🔹 SECTION 1: LIVE DASHBOARD
-# ==========================================================
-if section == "Live Dashboard":
+# =======================
+# 📊 LIVE OVERVIEW
+# =======================
+if page == "📊 Overview":
+    st.header("🌍 Live Air Quality Index (AQI) — At a Glance")
 
-    st.subheader("📊 Live AQI Status")
-
-    cols = st.columns(len(latest_data))
-
-    for i, (_, row) in enumerate(latest_data.iterrows()):
+    cols = st.columns(len(latest))
+    for i, (_, row) in enumerate(latest.iterrows()):
+        label, emoji = aqi_label(row["AQI"])
         with cols[i]:
-            st.metric(
-                label=row["City"],
-                value=f"AQI {row['AQI']}",
-                delta=aqi_color(row["AQI"])
-            )
+            st.markdown(f"""
+                <div style="background:#1f2937; padding: 15px; border-radius:12px; text-align:center; color:white;">
+                  <h3>{row['City']}</h3>
+                  <h1 style="font-size:32px;">{emoji} {row['AQI']}</h1>
+                  <p>{label}</p>
+                </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("---")
+    st.subheader("📋 Raw Latest Data")
+    st.dataframe(latest, use_container_width=True)
 
-    severe = latest_data[latest_data["AQI"] > 200]
-
-    if not severe.empty:
-        st.error("🚨 Severe Pollution Detected")
-        st.dataframe(severe, use_container_width=True)
-    else:
-        st.success("✅ No severe pollution detected.")
-
-    st.markdown("---")
-    st.subheader("📈 AQI Trend Analysis")
+# =======================
+# 📈 AQI TRENDS
+# =======================
+elif page == "📈 Trends":
+    st.header("📈 AQI Trends Over Time")
 
     selected_city = st.selectbox("Select City", data["City"].unique())
-    city_data = data[data["City"] == selected_city]
+    city_df = data[data["City"] == selected_city]
 
-    st.line_chart(city_data.set_index("Timestamp")["AQI"])
+    fig = px.line(
+        city_df,
+        x="Timestamp",
+        y="AQI",
+        title=f"AQI Trend — {selected_city}",
+        labels={"AQI": "Air Quality Index", "Timestamp": "Time"},
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
+# =======================
+# 🏆 RISK RANKING
+# =======================
+elif page == "🏆 Ranking":
+    st.header("🏅 Real-Time City Risk Ranking")
 
-# ==========================================================
-# 🔹 SECTION 2: CITY RANKING
-# ==========================================================
-elif section == "City Ranking":
+    st.dataframe(ranking.reset_index(drop=True), use_container_width=True)
 
-    st.subheader("🏆 Real-Time Risk Ranking")
+    top = ranking.iloc[0]
+    st.success(f"🔥 Highest Risk: {top['city']} (Risk Index: {top['risk_index']:.1f})")
 
-    st.dataframe(ranking, use_container_width=True)
-
-    if not ranking.empty:
-        top_city = ranking.iloc[0]
-        st.success(f"🔥 Highest Risk City: {top_city['city']}")
-
-
-# ==========================================================
-# 🔹 SECTION 3: AI ADVISORY
-# ==========================================================
-elif section == "AI Advisory":
-
-    st.subheader("🧠 AI Environmental Advisory")
+# =======================
+# 🤖 AI ADVISORY
+# =======================
+elif page == "🤖 AI Advisory":
+    st.header("🤖 AI Environmental Advisory")
 
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception:
-        st.error("❌ Gemini API key not configured in Streamlit Secrets.")
+        st.error("❌ Gemini API key not configured in Secrets.")
         st.stop()
 
-    if st.button("Generate Smart Advisory"):
+    st.write("Click the button to generate contextual environmental advisory:")
 
+    if st.button("📌 Generate AI Advisory"):
         summary = ""
-        for _, row in latest_data.iterrows():
-            summary += (
-                f"City: {row['City']}, "
-                f"AQI: {row['AQI']}, "
-                f"Category: {row.get('Category', 'N/A')}\n"
-            )
+        for _, r in latest.iterrows():
+            summary += f"{r['City']}: AQI {r['AQI']} ({aqi_label(r['AQI'])[0]})\n"
 
         prompt = f"""
-You are an environmental risk expert.
+        You are an environmental expert. Based on this live AQI data:
+        {summary}
 
-Based on this AQI data:
-{summary}
+        Provide:
+        - Health advisory for the public
+        - Outdoor activity safety tips
+        - Government action recommendations
+        - Warnings for children & elderly
+        """
 
-Provide:
-1. Public health advisory
-2. Outdoor activity recommendations
-3. Government emergency response suggestions
-4. Specific warning for children & elderly
-
-Keep response concise but professional.
-"""
-
-        with st.spinner("🤖 Generating AI advisory..."):
+        with st.spinner("🧠 Generating advisory..."):
             try:
                 model = genai.GenerativeModel("gemini-pro")
                 response = model.generate_content(prompt)
-
-                st.success("AI Advisory Generated")
                 st.markdown(response.text)
 
             except Exception as e:
                 st.error(f"AI generation failed: {e}")
 
-
-# ---------------- FOOTER ----------------
+# =======================
+# FOOTER
+# =======================
 st.markdown("---")
-st.caption("© 2026 GreenGuard | Hackathon Edition | Real-Time AI Environmental Intelligence Platform")
+st.markdown(
+    "<p style='text-align:center; font-size:12px;'>© 2026 GreenGuard | Real-Time AI Environmental Intelligence Platform</p>",
+    unsafe_allow_html=True
+)
