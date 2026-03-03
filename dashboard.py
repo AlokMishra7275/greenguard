@@ -1,20 +1,27 @@
 import streamlit as st
 import pandas as pd
 import google.generativeai as genai
+import os
 
-def load_css():
-    with open("style.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-load_css()
-
-# ---------------- CONFIG ----------------
+# ---------------- PAGE CONFIG (MUST BE FIRST STREAMLIT COMMAND) ----------------
 st.set_page_config(
     page_title="GreenGuard AI Platform",
     page_icon="🌍",
     layout="wide"
 )
 
+# ---------------- LOAD CSS ----------------
+def load_css():
+    css_path = os.path.join(os.path.dirname(__file__), "style.css")
+    if os.path.exists(css_path):
+        with open(css_path, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        st.warning("⚠ style.css not found")
+
+load_css()
+
+# ---------------- TITLE ----------------
 st.title("🌍 GreenGuard – Real-Time Environmental Intelligence")
 
 # ---------------- SIDEBAR ----------------
@@ -36,7 +43,7 @@ def load_data():
 
 try:
     ranking, data = load_data()
-except Exception as e:
+except Exception:
     st.error("⚠ Data not available. Please check backend pipeline.")
     st.stop()
 
@@ -94,6 +101,7 @@ if section == "Live Dashboard":
 
     st.line_chart(city_data.set_index("Timestamp")["AQI"])
 
+
 # ==========================================================
 # 🔹 SECTION 2: CITY RANKING
 # ==========================================================
@@ -103,8 +111,10 @@ elif section == "City Ranking":
 
     st.dataframe(ranking, use_container_width=True)
 
-    top_city = ranking.iloc[0]
-    st.success(f"🔥 Highest Risk City: {top_city['city']}")
+    if not ranking.empty:
+        top_city = ranking.iloc[0]
+        st.success(f"🔥 Highest Risk City: {top_city['city']}")
+
 
 # ==========================================================
 # 🔹 SECTION 3: AI ADVISORY
@@ -126,22 +136,23 @@ elif section == "AI Advisory":
             summary += (
                 f"City: {row['City']}, "
                 f"AQI: {row['AQI']}, "
-                f"Category: {row['Category']}\n"
+                f"Category: {row.get('Category', 'N/A')}\n"
             )
 
         prompt = f"""
-        You are an environmental risk expert.
+You are an environmental risk expert.
 
-        Based on this AQI data:
-        {summary}
+Based on this AQI data:
+{summary}
 
-        Provide:
-        1. Public health advisory
-        2. Outdoor activity recommendations
-        3. Government emergency response suggestions
-        4. Specific warning for children & elderly
-        Keep response concise but professional.
-        """
+Provide:
+1. Public health advisory
+2. Outdoor activity recommendations
+3. Government emergency response suggestions
+4. Specific warning for children & elderly
+
+Keep response concise but professional.
+"""
 
         with st.spinner("🤖 Generating AI advisory..."):
             try:
@@ -153,7 +164,7 @@ elif section == "AI Advisory":
 
             except Exception as e:
                 st.error(f"AI generation failed: {e}")
-                st.write(e)
+
 
 # ---------------- FOOTER ----------------
 st.markdown("---")
