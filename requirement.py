@@ -1,0 +1,9 @@
+streamlit
+requests
+pandas
+matplotlib
+numpy
+scikit-learn
+pathway
+google-generativeai
+plotly
