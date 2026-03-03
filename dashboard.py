@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from google import genai
+import google.generativeai as genai
 
 # ---------------- CONFIG ----------------
 st.set_page_config(
@@ -22,7 +22,7 @@ st.sidebar.markdown("---")
 st.sidebar.caption("Powered by Pathway + Gemini AI")
 
 # ---------------- LOAD DATA ----------------
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=15)
 def load_data():
     ranking = pd.read_csv("city_ranking.csv")
     data = pd.read_csv("aqi_data.csv")
@@ -31,8 +31,7 @@ def load_data():
 try:
     ranking, data = load_data()
 except Exception as e:
-    st.error("⚠ Data not available. Run backend & Pathway pipeline.")
-    st.write(e)
+    st.error("⚠ Data not available. Please check backend pipeline.")
     st.stop()
 
 latest_data = (
@@ -42,6 +41,17 @@ latest_data = (
 )
 
 ranking = ranking.sort_values("risk_index", ascending=False)
+
+# ---------------- AQI COLOR FUNCTION ----------------
+def aqi_color(aqi):
+    if aqi <= 50:
+        return "🟢 Good"
+    elif aqi <= 100:
+        return "🟡 Moderate"
+    elif aqi <= 200:
+        return "🟠 Unhealthy"
+    else:
+        return "🔴 Severe"
 
 # ==========================================================
 # 🔹 SECTION 1: LIVE DASHBOARD
@@ -57,21 +67,21 @@ if section == "Live Dashboard":
             st.metric(
                 label=row["City"],
                 value=f"AQI {row['AQI']}",
-                delta=row["Category"]
+                delta=aqi_color(row["AQI"])
             )
+
+    st.markdown("---")
 
     severe = latest_data[latest_data["AQI"] > 200]
 
-    st.markdown("---")
-
     if not severe.empty:
         st.error("🚨 Severe Pollution Detected")
-        st.dataframe(severe, width="stretch")
+        st.dataframe(severe, use_container_width=True)
     else:
-        st.success("No severe pollution detected.")
+        st.success("✅ No severe pollution detected.")
 
     st.markdown("---")
-    st.subheader("📈 AQI Trend")
+    st.subheader("📈 AQI Trend Analysis")
 
     selected_city = st.selectbox("Select City", data["City"].unique())
     city_data = data[data["City"] == selected_city]
@@ -84,10 +94,11 @@ if section == "Live Dashboard":
 elif section == "City Ranking":
 
     st.subheader("🏆 Real-Time Risk Ranking")
-    st.dataframe(ranking, width="stretch")
+
+    st.dataframe(ranking, use_container_width=True)
 
     top_city = ranking.iloc[0]
-    st.success(f"Highest Risk City: {top_city['city']}")
+    st.success(f"🔥 Highest Risk City: {top_city['city']}")
 
 # ==========================================================
 # 🔹 SECTION 3: AI ADVISORY
@@ -97,13 +108,12 @@ elif section == "AI Advisory":
     st.subheader("🧠 AI Environmental Advisory")
 
     try:
-        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    except Exception as e:
-        st.error("Gemini API key not configured.")
-        st.write(e)
+        genai.configure(api_key=st.secrets["AIzaSyCJHCZbAGl_aS12jy99nD-hr6A3K6aWLOc"])
+    except Exception:
+        st.error("❌ Gemini API key not configured in Streamlit Secrets.")
         st.stop()
 
-    if st.button("Generate Advisory"):
+    if st.button("Generate Smart Advisory"):
 
         summary = ""
         for _, row in latest_data.iterrows():
@@ -114,28 +124,31 @@ elif section == "AI Advisory":
             )
 
         prompt = f"""
+        You are an environmental risk expert.
+
         Based on this AQI data:
         {summary}
 
         Provide:
-        - Health advisory
-        - Outdoor safety suggestions
-        - Government action recommendations
-        - Warning for children and elderly
+        1. Public health advisory
+        2. Outdoor activity recommendations
+        3. Government emergency response suggestions
+        4. Specific warning for children & elderly
+        Keep response concise but professional.
         """
 
-        with st.spinner("Generating advisory..."):
+        with st.spinner("🤖 Generating AI advisory..."):
             try:
-                response = client.models.generate_content(
-                    model="gemini-1.0-pro",
-                    contents=prompt,
-                )
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                response = model.generate_content(prompt)
 
-                st.success(response.text)
+                st.success("AI Advisory Generated")
+                st.markdown(response.text)
 
             except Exception as e:
                 st.error("AI generation failed")
                 st.write(e)
+
 # ---------------- FOOTER ----------------
 st.markdown("---")
-st.caption("© GreenGuard | Hackathon Edition | Real-Time AI Environmental Intelligence Platform")
+st.caption("© 2026 GreenGuard | Hackathon Edition | Real-Time AI Environmental Intelligence Platform")
