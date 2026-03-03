@@ -1,11 +1,12 @@
+import streamlit as st
+import pandas as pd
+import google.generativeai as genai
+
 def load_css():
     with open("style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 load_css()
-import streamlit as st
-import pandas as pd
-import google.generativeai as genai
 
 # ---------------- CONFIG ----------------
 st.set_page_config(
