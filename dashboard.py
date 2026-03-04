@@ -246,9 +246,94 @@ st.sidebar.caption("Powered by Pathway + Gemini AI")
 # 📊 OVERVIEW PAGE
 # =====================================================
 if page == "📊 Overview":
-    st.markdown('<div class="section-title">🌍 Live Air Quality Overview</div>', unsafe_allow_html=True)
+    # ----- HERO HEADER -----
     st.markdown(
-        '<div class="section-subtitle">Current AQI levels across major Indian cities with quick health status indicators.</div>',
+        """
+        <div class="section-title">🌍 GreenGuard Air Quality Overview</div>
+        <div class="section-subtitle">
+            Live snapshot of ambient air quality across monitored Indian cities, updated continuously from the GreenGuard data pipeline.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ----- SUMMARY KPI ROW -----
+    total_cities = latest["City"].nunique()
+    avg_aqi = latest["AQI"].mean()
+    worst_row = latest.loc[latest["AQI"].idxmax()]
+    worst_label, _ = aqi_label(worst_row["AQI"])
+
+    kpi1, kpi2, kpi3 = st.columns(3)
+
+    with kpi1:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">Monitored Cities</div>
+                <div class="metric-main">
+                    <span>{total_cities}</span>
+                </div>
+                <div class="metric-status aqi-good">
+                    Network coverage
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with kpi2:
+        status_class = (
+            "aqi-good" if avg_aqi <= 50 else
+            "aqi-moderate" if avg_aqi <= 100 else
+            "aqi-unhealthy" if avg_aqi <= 200 else
+            "aqi-hazardous"
+        )
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">Average AQI</div>
+                <div class="metric-main {status_class}">
+                    <span>{int(avg_aqi)}</span>
+                </div>
+                <div class="metric-status {status_class}">
+                    Network health
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with kpi3:
+        worst_class = (
+            "aqi-good" if worst_label == "Good" else
+            "aqi-moderate" if worst_label == "Moderate" else
+            "aqi-unhealthy" if worst_label == "Unhealthy" else
+            "aqi-hazardous"
+        )
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-label">Highest AQI City</div>
+                <div class="metric-main {worst_class}">
+                    <span>{worst_row['City']}</span>
+                </div>
+                <div class="metric-status {worst_class}">
+                    <span class="badge-dot" style="background:currentColor;"></span>{worst_label} · {int(worst_row['AQI'])}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ----- CITY CARDS -----
+    st.markdown(
+        "<div class='section-title'>City-wise Live AQI</div>",
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        "<div class='section-subtitle'>Per-city status with emoji and health banding for quick scanning.</div>",
         unsafe_allow_html=True
     )
 
@@ -279,9 +364,13 @@ if page == "📊 Overview":
             </div>
             """, unsafe_allow_html=True)
 
-    st.markdown("<div class='section-title' style='margin-top:1.2rem;'>📋 Latest Raw Data</div>", unsafe_allow_html=True)
+    # ----- RAW DATA TABLE -----
     st.markdown(
-        "<div class='section-subtitle'>Snapshot of the most recent readings ingested by the GreenGuard data pipeline.</div>",
+        "<div class='section-title' style='margin-top:1.2rem;'>📋 Latest Raw Data</div>",
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        "<div class='section-subtitle'>Underlying records for the most recent observation per city.</div>",
         unsafe_allow_html=True
     )
     st.markdown("<div class='df-card'>", unsafe_allow_html=True)
