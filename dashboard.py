@@ -21,9 +21,10 @@ body {
 }
 
 /* Hide default Streamlit chrome */
+/* Hide default Streamlit chrome */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
+/* header {visibility: hidden;}   <-- REMOVE or comment this */
 
 /* Main container padding */
 .block-container {
