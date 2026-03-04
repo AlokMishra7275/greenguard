@@ -11,6 +11,195 @@ st.set_page_config(
     layout="wide"
 )
 
+# ---------------- GLOBAL CSS ----------------
+st.markdown("""
+<style>
+/* Global background & font */
+body {
+    background: radial-gradient(circle at top, #e8ffe8 0, #f5f7fb 40%, #eef3ff 100%);
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Hide default Streamlit chrome */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Main container padding */
+.block-container {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    max-width: 1200px;
+}
+
+/* Top navbar */
+.navbar {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border-radius: 18px;
+    padding: 0.8rem 1.4rem;
+    margin-bottom: 1.2rem;
+    border: 1px solid rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 14px 45px rgba(15, 70, 15, 0.10);
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.brand-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #00c853, #64dd17);
+    color: #ffffff;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.brand-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #163300;
+}
+
+.brand-sub {
+    font-size: 0.78rem;
+    color: #4d5b35;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.8rem;
+    color: #5f6368;
+}
+
+.nav-pill {
+    padding: 0.25rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 200, 83, 0.18);
+    background: rgba(200, 255, 210, 0.7);
+    color: #0b8a2a;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+/* Section titles */
+.section-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+    color: #111827;
+}
+
+.section-subtitle {
+    font-size: 0.88rem;
+    color: #6b7280;
+    margin-bottom: 0.8rem;
+}
+
+/* KPI cards */
+.metric-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 0.2rem;
+}
+
+.metric-main {
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+}
+
+.metric-status {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* AQI colors */
+.aqi-good { color: #16a34a; }
+.aqi-moderate { color: #eab308; }
+.aqi-unhealthy { color: #f97316; }
+.aqi-hazardous { color: #b91c1c; }
+
+.badge-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    margin-right: 0.3rem;
+    display: inline-block;
+}
+
+/* Dataframe wrapper */
+.df-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 0.75rem 0.9rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Custom footer */
+.custom-footer {
+    margin-top: 1.4rem;
+    font-size: 0.76rem;
+    color: #6b7280;
+    text-align: center;
+    padding-top: 0.6rem;
+    border-top: 1px dashed rgba(148, 163, 184, 0.6);
+}
+
+.custom-footer a {
+    color: #0f766e;
+    text-decoration: none;
+    font-weight: 500;
+}
+.custom-footer a:hover {
+    text-decoration: underline;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- TOP NAVBAR ----------------
+st.markdown("""
+<div class="navbar">
+  <div class="nav-left">
+    <div class="brand-badge">G</div>
+    <div>
+      <div class="brand-title">GreenGuard</div>
+      <div class="brand-sub">AI Environmental Intelligence · Live AQI Insights</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="nav-pill">⚡ Pathway · Gemini AI</span>
+    <span>Updated in near real-time</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
 # ---------------- AQI LABEL FUNCTION ----------------
 def aqi_label(aqi):
     if aqi <= 50:
@@ -27,10 +216,7 @@ def aqi_label(aqi):
 def load_data():
     ranking = pd.read_csv("city_ranking.csv")
     data = pd.read_csv("aqi_data.csv")
-    
-    # Ensure timestamp is datetime
     data["Timestamp"] = pd.to_datetime(data["Timestamp"])
-    
     return ranking, data
 
 try:
@@ -39,7 +225,6 @@ except Exception:
     st.error("⚠ Data files not found. Ensure backend is generating CSV files.")
     st.stop()
 
-# Get latest AQI per city
 latest = (
     data.sort_values("Timestamp")
         .groupby("City")
@@ -61,29 +246,57 @@ st.sidebar.caption("Powered by Pathway + Gemini AI")
 # 📊 OVERVIEW PAGE
 # =====================================================
 if page == "📊 Overview":
-    st.title("🌍 Live Air Quality Overview")
+    st.markdown('<div class="section-title">🌍 Live Air Quality Overview</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Current AQI levels across major Indian cities with quick health status indicators.</div>',
+        unsafe_allow_html=True
+    )
 
     cols = st.columns(len(latest))
 
     for i, (_, row) in enumerate(latest.iterrows()):
         label, emoji = aqi_label(row["AQI"])
 
-        with cols[i]:
-            st.metric(
-                label=row["City"],
-                value=f"{emoji} {row['AQI']}",
-                delta=label
-            )
+        if label == "Good":
+            status_class = "aqi-good"
+        elif label == "Moderate":
+            status_class = "aqi-moderate"
+        elif label == "Unhealthy":
+            status_class = "aqi-unhealthy"
+        else:
+            status_class = "aqi-hazardous"
 
-    st.markdown("---")
-    st.subheader("📋 Latest Raw Data")
+        with cols[i]:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">{row['City']}</div>
+                <div class="metric-main {status_class}">
+                    <span>{emoji} {int(row['AQI'])}</span>
+                </div>
+                <div class="metric-status {status_class}">
+                    <span class="badge-dot" style="background:currentColor;"></span>{label}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-title' style='margin-top:1.2rem;'>📋 Latest Raw Data</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='section-subtitle'>Snapshot of the most recent readings ingested by the GreenGuard data pipeline.</div>",
+        unsafe_allow_html=True
+    )
+    st.markdown("<div class='df-card'>", unsafe_allow_html=True)
     st.dataframe(latest, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # =====================================================
 # 📈 TRENDS PAGE
 # =====================================================
 elif page == "📈 Trends":
-    st.title("📈 AQI Trends Over Time")
+    st.markdown('<div class="section-title">📈 AQI Trends Over Time</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Drill down into time-series AQI behaviour for a selected city.</div>',
+        unsafe_allow_html=True
+    )
 
     selected_city = st.selectbox(
         "Select City",
@@ -103,7 +316,9 @@ elif page == "📈 Trends":
     fig.update_layout(
         template="plotly_dark",
         xaxis_title="Time",
-        yaxis_title="Air Quality Index"
+        yaxis_title="Air Quality Index",
+        title_x=0.02,
+        margin=dict(l=10, r=10, t=50, b=10)
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -112,12 +327,18 @@ elif page == "📈 Trends":
 # 🏆 RANKING PAGE
 # =====================================================
 elif page == "🏆 Ranking":
-    st.title("🏆 Real-Time Risk Ranking")
+    st.markdown('<div class="section-title">🏆 Real-Time Risk Ranking</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Cities ordered by composite risk index combining AQI severity and persistence.</div>',
+        unsafe_allow_html=True
+    )
 
+    st.markdown("<div class='df-card'>", unsafe_allow_html=True)
     st.dataframe(
         ranking.reset_index(drop=True),
         use_container_width=True
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if not ranking.empty:
         top = ranking.iloc[0]
@@ -130,7 +351,11 @@ elif page == "🏆 Ranking":
 # 🤖 AI ADVISORY PAGE
 # =====================================================
 elif page == "🤖 AI Advisory":
-    st.title("🤖 AI Environmental Advisory")
+    st.markdown('<div class="section-title">🤖 AI Environmental Advisory</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Policy-grade recommendations and public health advisories generated from live AQI signals.</div>',
+        unsafe_allow_html=True
+    )
 
     try:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -171,8 +396,9 @@ elif page == "🤖 AI Advisory":
                 st.error(f"AI generation failed: {e}")
 
 # ---------------- FOOTER ----------------
-st.markdown("---")
-st.markdown(
-    "<p style='text-align:center; font-size:12px;'>© 2026 GreenGuard | AI Environmental Intelligence Platform</p>",
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div class="custom-footer">
+  © 2026 GreenGuard · AI Environmental Intelligence Platform · Built with Streamlit ·
+  <a href="https://aigreenguard1.streamlit.app/" target="_blank">Live dashboard</a>
+</div>
+""", unsafe_allow_html=True)
